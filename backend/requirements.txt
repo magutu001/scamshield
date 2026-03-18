@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+python-whois
+pydantic
+python-multipart
+python-dotenv

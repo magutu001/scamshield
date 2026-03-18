@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScamShield — Job Scam Detection System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+</head>
+<body>
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="shield-icon">🛡</span>
+      <span class="brand-name">Scam<strong>Shield</strong></span>
+      <span class="brand-tag">Kenya</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('analyze')">Analyze</button>
+      <button class="nav-tab" onclick="showPage('history')">History</button>
+    </div>
+    <!-- Guest buttons -->
+    <div id="nav-guest" class="nav-auth">
+      <button class="auth-btn outline" onclick="openAuth('login')">Log In</button>
+      <button class="auth-btn filled" onclick="openAuth('register')">Sign Up</button>
+    </div>
+    <!-- Logged-in user menu -->
+    <div id="nav-user" class="nav-user hidden">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div class="user-info">
+        <span class="user-name" id="user-name-display">–</span>
+        <span class="user-role">Job Seeker</span>
+      </div>
+      <button class="logout-icon-btn" onclick="logout()" title="Logout">↩</button>
+    </div>
+  </nav>
+
+  <!-- ── PAGE: ANALYZE ── -->
+  <main id="page-analyze" class="page active">
+    <div class="hero-section">
+      <div class="hero-badge">AI-Powered Detection System</div>
+      <h1 class="hero-title">Detect Job Scams<br /><em>Before They Deceive You</em></h1>
+      <p class="hero-sub">Paste any job advertisement below. Our system analyzes text patterns, verifies domain credibility, and returns an instant risk verdict.</p>
+    </div>
+
+    <div class="analyzer-layout">
+      <div class="input-panel card">
+        <div class="card-header">
+          <span class="card-icon">📋</span>
+          <h2>Job Advertisement Input</h2>
+        </div>
+        <div class="form-group">
+          <label for="job-title">Job Title <span class="optional">(optional)</span></label>
+          <input type="text" id="job-title" placeholder="e.g. Data Entry Clerk – Work From Home" />
+        </div>
+        <div class="form-group">
+          <label for="job-desc">Job Advertisement Text <span class="required">*</span></label>
+          <textarea id="job-desc" rows="10" placeholder="Paste the full job advertisement here…&#10;&#10;Example: URGENT HIRING! Earn KSh 5,000 per day. No experience required. Send KSh 500 registration fee…"></textarea>
+          <div class="char-counter"><span id="char-count">0</span> characters</div>
+        </div>
+        <div class="form-group">
+          <label for="job-domain">Website / Domain <span class="optional">(optional – for SSL & WHOIS check)</span></label>
+          <input type="text" id="job-domain" placeholder="e.g. https://example.co.ke" />
+        </div>
+        <div class="quick-samples">
+          <span class="samples-label">Try a sample:</span>
+          <button class="sample-btn" onclick="loadSample('scam')">🚨 Scam Ad</button>
+          <button class="sample-btn" onclick="loadSample('legit')">✅ Legit Ad</button>
+          <button class="sample-btn" onclick="loadSample('mixed')">⚠️ Mixed</button>
+        </div>
+        <button class="analyze-btn" id="analyze-btn" onclick="analyzeJob()">
+          <span class="btn-text">Analyze Advertisement</span>
+          <span class="btn-icon">→</span>
+        </button>
+      </div>
+
+      <div class="result-panel" id="result-panel">
+        <div class="result-placeholder card" id="result-placeholder">
+          <div class="placeholder-icon">🔍</div>
+          <p>Your analysis result will appear here</p>
+          <p class="placeholder-sub">Paste a job ad and click Analyze</p>
+        </div>
+        <div class="result-card card hidden" id="result-card">
+          <div class="verdict-banner" id="verdict-banner">
+            <div class="verdict-emoji" id="verdict-emoji"></div>
+            <div class="verdict-info">
+              <div class="verdict-label">RISK VERDICT</div>
+              <div class="verdict-text" id="verdict-text"></div>
+            </div>
+            <div class="verdict-score-wrap">
+              <div class="verdict-score" id="verdict-score"></div>
+              <div class="verdict-score-label">risk score</div>
+            </div>
+          </div>
+          <div class="verdict-advice" id="verdict-advice"></div>
+          <div class="score-bar-section">
+            <div class="score-bar-track">
+              <div class="score-bar-fill" id="score-bar-fill"></div>
+              <div class="score-markers"><span>Safe</span><span>Caution</span><span>High Risk</span></div>
+            </div>
+          </div>
+          <div class="flags-section" id="flags-section">
+            <h3 class="section-title">🚩 Detected Indicators</h3>
+            <div class="flags-grid" id="flags-grid"></div>
+          </div>
+          <div class="domain-section" id="domain-section">
+            <h3 class="section-title">🌐 Domain Verification</h3>
+            <div class="domain-checks" id="domain-checks"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-bar card">
+      <div class="stat-item"><div class="stat-number" id="stat-total">–</div><div class="stat-label">Total Scanned</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item danger"><div class="stat-number" id="stat-high">–</div><div class="stat-label">High Risk</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item warning"><div class="stat-number" id="stat-caution">–</div><div class="stat-label">Needs Caution</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item success"><div class="stat-number" id="stat-safe">–</div><div class="stat-label">Likely Safe</div></div>
+    </div>
+  </main>
+
+  <!-- ── PAGE: HISTORY ── -->
+  <main id="page-history" class="page">
+    <div class="page-header">
+      <h1>Analysis History</h1>
+      <p id="history-subtitle">All previously analyzed job advertisements</p>
+    </div>
+    <div class="history-controls">
+      <input type="text" id="history-search" placeholder="🔍 Search by title or verdict…" oninput="filterHistory()" />
+    </div>
+    <div class="history-table-wrap card">
+      <table class="history-table">
+        <thead>
+          <tr><th>#</th><th>Job Title</th><th>Domain</th><th>Score</th><th>Verdict</th><th>Date</th></tr>
+        </thead>
+        <tbody id="history-tbody"></tbody>
+      </table>
+      <div class="table-empty hidden" id="history-empty">No records found.</div>
+    </div>
+  </main>
+
+  <!-- ── AUTH MODAL ── -->
+  <div class="modal-overlay hidden" id="auth-modal" onclick="closeAuthIfOutside(event)">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeAuth()">✕</button>
+
+      <!-- Login Form -->
+      <div id="form-login">
+        <div class="modal-icon">👤</div>
+        <h2 class="modal-title">Welcome Back</h2>
+        <p class="modal-sub">Log in to save your scan history</p>
+        <div class="modal-error hidden" id="login-error"></div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="your@email.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitLogin()" />
+        </div>
+        <button class="modal-submit-btn" onclick="submitLogin()">Log In</button>
+        <p class="modal-switch">Don't have an account? <a onclick="switchForm('register')">Sign Up</a> · <a onclick="switchForm('forgot')">Forgot password?</a></p>
+      </div>
+
+      <!-- Register Form -->
+      <div id="form-register" class="hidden">
+        <div class="modal-icon">🛡</div>
+        <h2 class="modal-title">Create Account</h2>
+        <p class="modal-sub">Join ScamShield to save your history</p>
+        <div class="modal-error hidden" id="register-error"></div>
+        <div id="register-fields">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="register-name" placeholder="John Doe" />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="register-email" placeholder="your@email.com" />
+          </div>
+          <div class="form-group">
+            <label>Password <span class="optional">(min 6 characters)</span></label>
+            <input type="password" id="register-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitRegister()" />
+          </div>
+          <button class="modal-submit-btn" onclick="submitRegister()">Send Verification Code</button>
+        </div>
+        <div id="verify-fields" class="hidden">
+          <div class="modal-icon">📧</div>
+          <h2 class="modal-title">Check Your Email</h2>
+          <p class="modal-sub" id="verify-sub">Enter the 6-digit code sent to your email</p>
+          <div class="form-group">
+            <label>Verification Code</label>
+            <input type="text" id="verify-code" placeholder="000000" maxlength="6"
+              style="font-size:24px;letter-spacing:8px;text-align:center;font-weight:700;"
+              onkeydown="if(event.key==='Enter')submitVerify()" />
+          </div>
+          <button class="modal-submit-btn" onclick="submitVerify()">Verify & Create Account</button>
+          <p class="modal-switch"><a onclick="backToRegister()">← Use a different email</a></p>
+        </div>
+        <p class="modal-switch" id="register-switch-link">Already have an account? <a onclick="switchForm('login')">Log In</a></p>
+      </div>
+
+      <!-- Forgot Password — Step 1: Enter email -->
+      <div id="form-forgot" class="hidden">
+        <div class="modal-icon">🔐</div>
+        <h2 class="modal-title">Reset Password</h2>
+        <p class="modal-sub">Enter your email to receive a reset code</p>
+        <div class="modal-error hidden" id="forgot-error"></div>
+        <div id="forgot-fields">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="forgot-email" placeholder="your@email.com"
+              onkeydown="if(event.key==='Enter')submitForgot()" />
+          </div>
+          <button class="modal-submit-btn" onclick="submitForgot()">Send Reset Code</button>
+          <p class="modal-switch">Remembered it? <a onclick="switchForm('login')">Log In</a></p>
+        </div>
+        <!-- Step 2: Enter code + new password -->
+        <div id="forgot-verify-fields" class="hidden">
+          <div class="modal-icon">📧</div>
+          <h2 class="modal-title">Check Your Email</h2>
+          <p class="modal-sub" id="forgot-verify-sub">Enter the code sent to your email</p>
+          <div class="form-group">
+            <label>Reset Code</label>
+            <input type="text" id="forgot-code" placeholder="000000" maxlength="6"
+              style="font-size:24px;letter-spacing:8px;text-align:center;font-weight:700;" />
+          </div>
+          <div class="form-group">
+            <label>New Password <span class="optional">(min 6 characters)</span></label>
+            <input type="password" id="forgot-new-password" placeholder="••••••••"
+              onkeydown="if(event.key==='Enter')submitResetPassword()" />
+          </div>
+          <button class="modal-submit-btn" onclick="submitResetPassword()">Reset Password</button>
+          <p class="modal-switch"><a onclick="backToForgot()">← Use a different email</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p class="loading-text">Analyzing advertisement…</p>
+      <p class="loading-sub">Checking text patterns & domain</p>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

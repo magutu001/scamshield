@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — ScamShield</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    .admin-topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; }
+    .logout-btn { background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); color:#ff4757; border-radius:8px; padding:8px 18px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .logout-btn:hover { background:rgba(255,71,87,0.2); }
+    .admin-tabs { display:flex; gap:4px; margin-bottom:28px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; width:fit-content; }
+    .admin-tab { font-family:var(--font-display); font-size:13px; font-weight:600; color:var(--text-2); background:none; border:none; cursor:pointer; padding:9px 20px; border-radius:7px; transition:all 0.2s; }
+    .admin-tab:hover { color:var(--text-1); background:var(--surface-2); }
+    .admin-tab.active { color:var(--accent); background:var(--accent-dim); }
+    .tab-page { display:none; }
+    .tab-page.active { display:block; animation:fadeUp 0.3s ease; }
+    .admin-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    @media(max-width:700px){ .admin-stats{grid-template-columns:repeat(2,1fr);} }
+    .admin-stat-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px 24px; }
+    .admin-stat-num { font-family:var(--font-display); font-size:32px; font-weight:800; }
+    .admin-stat-num.red { color:var(--danger); }
+    .admin-stat-num.orange { color:var(--warning); }
+    .admin-stat-num.green { color:var(--safe); }
+    .admin-stat-num.accent { color:var(--accent); }
+    .admin-stat-label { font-size:11px; color:var(--text-3); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; }
+    .data-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th { text-align:left; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-3); padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface-2); }
+    .data-table td { padding:13px 20px; font-size:13px; border-bottom:1px solid var(--border); color:var(--text-2); }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr:hover td { background:var(--surface-2); }
+    .role-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+    .role-badge.jobseeker { background:rgba(30,144,255,0.12); color:#1e90ff; border:1px solid rgba(30,144,255,0.2); }
+    .role-badge.admin { background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent-glow); }
+    .del-btn { background:none; border:1px solid rgba(255,71,87,0.2); color:rgba(255,71,87,0.5); border-radius:5px; padding:4px 10px; font-size:12px; cursor:pointer; transition:all 0.15s; }
+    .del-btn:hover { border-color:var(--danger); color:var(--danger); background:var(--danger-dim); }
+    .table-controls { display:flex; gap:12px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+    .table-controls input { max-width:300px; }
+    .count-badge { font-size:12px; color:var(--text-3); margin-left:auto; }
+    .empty-state { padding:48px; text-align:center; color:var(--text-3); font-size:14px; }
+  </style>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+</head>
+<body>
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="shield-icon">🛡</span>
+      <span class="brand-name">Scam<strong>Shield</strong></span>
+      <span class="brand-tag">Admin</span>
+    </div>
+    <div class="nav-tabs">
+      <a href="/" style="text-decoration:none"><button class="nav-tab">← Back to App</button></a>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot"></span>
+      <span class="status-text">Admin Mode</span>
+    </div>
+  </nav>
+
+  <main class="page active">
+    <div class="admin-topbar">
+      <div class="page-header" style="margin:0">
+        <h1>Admin Panel</h1>
+        <p>Manage your ScamShield system</p>
+      </div>
+      <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="admin-stats">
+      <div class="admin-stat-card"><div class="admin-stat-num" id="s-total">–</div><div class="admin-stat-label">Total Scans</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num red" id="s-high">–</div><div class="admin-stat-label">High Risk</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num orange" id="s-caution">–</div><div class="admin-stat-label">Needs Caution</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-num accent" id="s-users">–</div><div class="admin-stat-label">Registered Users</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('rules',this)">⚙️ Detection Rules</button>
+      <button class="admin-tab" onclick="switchTab('users',this)">👥 Users</button>
+      <button class="admin-tab" onclick="switchTab('scans',this)">📋 Scan History</button>
+    </div>
+
+    <!-- ── RULES TAB ── -->
+    <div class="tab-page active" id="tab-rules">
+      <div class="admin-layout">
+        <div class="rules-panel card">
+          <div class="card-header">
+            <span class="card-icon">⚙️</span>
+            <h2>Detection Rules</h2>
+            <button class="small-btn" onclick="openAddRule()">+ Add Rule</button>
+          </div>
+          <div id="rules-list"></div>
+        </div>
+        <div class="rule-editor card">
+          <div class="card-header"><span class="card-icon">✏️</span><h2 id="editor-title">Select a rule to edit</h2></div>
+          <input type="hidden" id="edit-rule-id" />
+          <div class="form-group"><label>Rule Name</label><input type="text" id="edit-name" /></div>
+          <div class="form-group"><label>Regex Pattern</label><input type="text" id="edit-pattern" class="code-input" /></div>
+          <div class="form-row">
+            <div class="form-group half"><label>Weight (1–50)</label><input type="number" id="edit-weight" min="1" max="50" /></div>
+            <div class="form-group half">
+              <label>Category</label>
+              <select id="edit-category">
+                <option value="payment">Payment</option><option value="salary">Salary</option>
+                <option value="urgency">Urgency</option><option value="contact">Contact</option>
+                <option value="qualifications">Qualifications</option><option value="personal_info">Personal Info</option>
+                <option value="company">Company</option><option value="description">Description</option>
+                <option value="wfh">Work From Home</option><option value="tbgt">Too Good To Be True</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group toggle-group">
+            <label>Active</label>
+            <label class="toggle"><input type="checkbox" id="edit-active" checked /><span class="toggle-slider"></span></label>
+          </div>
+          <div class="editor-actions">
+            <button class="save-btn" onclick="saveRule()">Save Rule</button>
+            <button class="cancel-btn" onclick="closeEditor()">Cancel</button>
+          </div>
+          <div id="editor-delete-wrap" style="margin-top:12px;display:none;">
+            <button class="cancel-btn" style="width:100%;color:var(--danger);border-color:rgba(255,71,87,0.3);" onclick="deleteCurrentRule()">🗑 Delete This Rule</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── USERS TAB ── -->
+    <div class="tab-page" id="tab-users">
+      <div class="table-controls">
+        <input type="text" id="user-search" placeholder="🔍 Search by name or email…" oninput="filterUsers()" />
+        <span class="count-badge" id="user-count"></span>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+        <div class="empty-state hidden" id="users-empty">No users found.</div>
+      </div>
+    </div>
+
+    <!-- ── SCANS TAB ── -->
+    <div class="tab-page" id="tab-scans">
+      <div class="table-controls">
+        <input type="text" id="scan-search" placeholder="🔍 Search by title, user or verdict…" oninput="filterScans()" />
+        <span class="count-badge" id="scan-count"></span>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Job Title</th><th>User</th><th>Domain</th><th>Score</th><th>Verdict</th><th>Date</th></tr></thead>
+          <tbody id="scans-tbody"></tbody>
+        </table>
+        <div class="empty-state hidden" id="scans-empty">No scan records found.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = sessionStorage.getItem('admin_token');
+    if (!token) window.location.href = '/admin-login';
+    const HEADERS = { 'Content-Type': 'application/json', 'x-admin-token': token };
+
+    function logout() { sessionStorage.removeItem('admin_token'); window.location.href = '/'; }
+
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-page').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(`tab-${name}`).classList.add('active');
+      btn.classList.add('active');
+      if (name === 'users') loadUsers();
+      if (name === 'scans') loadScans();
+    }
+
+
+
+    // ── Rules ─────────────────────────────────────────────
+    let rulesData = [], editingId = null;
+    const CAT_COLORS = { payment:'#ff4757',salary:'#ffa502',urgency:'#ff6b35',contact:'#a57de8',qualifications:'#1e90ff',personal_info:'#ff4757',company:'#00e5a0',wfh:'#00d2d3',tbgt:'#feca57',description:'#74b9ff' };
+
+    async function loadRules() {
+      const res = await fetch('/api/rules', { headers: HEADERS });
+      if (res.status === 401) { logout(); return; }
+      rulesData = await res.json(); renderRules();
+    }
+
+    function renderRules() {
+      document.getElementById('rules-list').innerHTML = rulesData.map(r => {
+        const dot = CAT_COLORS[r.category]||'#888';
+        return `<div class="rule-item ${r.active_flag?'':'inactive'}" onclick="editRule(${r.rule_id})">
+          <div class="rule-dot" style="background:${dot};box-shadow:0 0 6px ${dot}40"></div>
+          <div class="rule-info"><div class="rule-name">${escHtml(r.name)}</div><div class="rule-category">${r.category}</div></div>
+          <div class="rule-weight-badge">+${r.weight}</div>
+          <div class="rule-actions" onclick="event.stopPropagation()">
+            <button class="icon-btn" onclick="event.stopPropagation();editRule(${r.rule_id})" title="Edit">✏️</button>
+            <button class="icon-btn del" onclick="event.stopPropagation();deleteRule(${r.rule_id})" title="Delete rule">🗑 Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function editRule(id) {
+      const r = rulesData.find(r => r.rule_id===id); if (!r) return;
+      editingId = id;
+      document.getElementById('editor-title').textContent = 'Edit Rule';
+      document.getElementById('edit-rule-id').value  = id;
+      document.getElementById('edit-name').value     = r.name;
+      document.getElementById('edit-pattern').value  = r.pattern;
+      document.getElementById('edit-weight').value   = r.weight;
+      document.getElementById('edit-category').value = r.category;
+      document.getElementById('edit-active').checked = !!r.active_flag;
+      document.getElementById('editor-delete-wrap').style.display = 'block';
+    }
+
+    function openAddRule() {
+      editingId = null;
+      document.getElementById('editor-title').textContent = 'Add New Rule';
+      ['edit-rule-id','edit-name','edit-pattern'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('edit-weight').value=10;
+      document.getElementById('edit-category').value='description';
+      document.getElementById('edit-active').checked=true;
+      document.getElementById('editor-delete-wrap').style.display = 'none';
+    }
+
+    function closeEditor() {
+      document.getElementById('edit-name').value='';
+      document.getElementById('edit-pattern').value='';
+      document.getElementById('editor-delete-wrap').style.display = 'none';
+      editingId=null;
+    }
+
+    async function deleteCurrentRule() {
+      if (!editingId) return;
+      const r = rulesData.find(r => r.rule_id===editingId);
+      if (!confirm(`Delete rule "${r ? r.name : editingId}"?
+This cannot be undone.`)) return;
+      await fetch(`/api/rules/${editingId}`, { method:'DELETE', headers:HEADERS });
+      showToast('Rule deleted.'); closeEditor(); loadRules();
+    }
+
+    async function saveRule() {
+      const payload = { name:document.getElementById('edit-name').value.trim(), pattern:document.getElementById('edit-pattern').value.trim(), weight:parseInt(document.getElementById('edit-weight').value), category:document.getElementById('edit-category').value, active_flag:document.getElementById('edit-active').checked?1:0 };
+      if (!payload.name||!payload.pattern) { alert('Name and pattern are required.'); return; }
+      await fetch(editingId?`/api/rules/${editingId}`:'/api/rules', { method:editingId?'PUT':'POST', headers:HEADERS, body:JSON.stringify(payload) });
+      showToast(editingId?'Rule updated!':'Rule added!'); loadRules(); closeEditor();
+    }
+
+    async function deleteRule(id) {
+      if (!confirm('Delete this rule?')) return;
+      await fetch(`/api/rules/${id}`, { method:'DELETE', headers:HEADERS });
+      showToast('Rule deleted.'); loadRules();
+    }
+
+    // ── Users ─────────────────────────────────────────────
+    let usersData = [];
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users', { headers: HEADERS });
+        if (res.status===401) { logout(); return; }
+        usersData = await res.json(); renderUsers(usersData);
+      } catch { alert('Failed to load users.'); }
+    }
+
+    function renderUsers(rows) {
+      const tbody = document.getElementById('users-tbody');
+      document.getElementById('user-count').textContent = `${rows.length} user${rows.length!==1?'s':''}`;
+      document.getElementById('users-empty').classList.toggle('hidden', rows.length>0);
+      tbody.innerHTML = rows.map(u => {
+        const role   = u.role==='Admin'?'admin':'jobseeker';
+        const joined = u.created_date?u.created_date.slice(0,10):'–';
+        return `<tr>
+          <td style="color:var(--text-3)">#${u.user_id}</td>
+          <td style="color:var(--text-1);font-weight:500">${escHtml(u.name)}</td>
+          <td>${escHtml(u.email)}</td>
+          <td><span class="role-badge ${role}">${u.role}</span></td>
+          <td style="font-size:12px">${joined}</td>
+          <td>${u.role==='Admin'
+            ? '<span style="color:var(--text-3);font-size:12px">Protected</span>'
+            : `<button class="del-btn" onclick="deleteUser(${u.user_id},'${escHtml(u.name)}')">🗑 Delete</button>`}
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('user-search').value.toLowerCase();
+      renderUsers(usersData.filter(u => u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q)));
+    }
+
+    async function deleteUser(id, name) {
+      if (!confirm(`Delete user "${name}" and all their data?\nThis cannot be undone.`)) return;
+      const res = await fetch(`/api/admin/users/${id}`, { method:'DELETE', headers:HEADERS });
+      if (res.ok) { showToast(`User "${name}" deleted.`); loadUsers(); loadStats(); }
+      else { const d=await res.json(); alert(d.detail||'Delete failed.'); }
+    }
+
+    // ── Scans ─────────────────────────────────────────────
+    let scansData = [];
+
+    async function loadScans() {
+      try {
+        const res = await fetch('/api/admin/history', { headers: HEADERS });
+        if (res.status===401) { logout(); return; }
+        scansData = await res.json(); renderScans(scansData);
+      } catch { alert('Failed to load scan history.'); }
+    }
+
+    function renderScans(rows) {
+      const tbody = document.getElementById('scans-tbody');
+      document.getElementById('scan-count').textContent = `${rows.length} record${rows.length!==1?'s':''}`;
+      document.getElementById('scans-empty').classList.toggle('hidden', rows.length>0);
+      tbody.innerHTML = rows.map(r => {
+        const color = r.verdict?.includes('HIGH')?'red':r.verdict?.includes('CAUTION')?'orange':'green';
+        const sc    = color==='red'?'var(--danger)':color==='orange'?'var(--warning)':'var(--safe)';
+        const date  = r.analyzed_date?r.analyzed_date.slice(0,16).replace('T',' '):'–';
+        return `<tr>
+          <td style="color:var(--text-3)">#${r.advert_id}</td>
+          <td style="color:var(--text-1);font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.title||'Untitled')}</td>
+          <td style="color:var(--accent)">${escHtml(r.user_name||'Guest')}</td>
+          <td style="font-size:12px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.domain||'—')}</td>
+          <td><strong style="color:${sc}">${r.scam_score}</strong></td>
+          <td><span class="verdict-pill ${color}">${r.verdict}</span></td>
+          <td style="font-size:12px">${date}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterScans() {
+      const q = document.getElementById('scan-search').value.toLowerCase();
+      renderScans(scansData.filter(r =>
+        (r.title||'').toLowerCase().includes(q)||(r.verdict||'').toLowerCase().includes(q)||
+        (r.user_name||'').toLowerCase().includes(q)||(r.domain||'').toLowerCase().includes(q)
+      ));
+    }
+
+    // ── Utils ─────────────────────────────────────────────
+    function showToast(msg) {
+      const t=document.createElement('div'); t.className='toast success'; t.textContent=msg;
+      document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+    }
+    function escHtml(str) { const d=document.createElement('div'); d.appendChild(document.createTextNode(String(str))); return d.innerHTML; }
+
+    // ── Init ─────────────────────────────────────────────
+    // Stats load independently — no auth needed for scan counts
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        if (!res.ok) return;
+        const s = await res.json();
+        document.getElementById('s-total').textContent   = s.total      !== undefined ? s.total      : '–';
+        document.getElementById('s-high').textContent    = s.high_risk  !== undefined ? s.high_risk  : '–';
+        document.getElementById('s-caution').textContent = s.caution    !== undefined ? s.caution    : '–';
+      } catch(e) { console.error('Stats error', e); }
+
+      try {
+        const t   = sessionStorage.getItem('admin_token');
+        const res = await fetch('/api/admin/users', {
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': t }
+        });
+        if (res.ok) {
+          const u = await res.json();
+          document.getElementById('s-users').textContent = Array.isArray(u) ? u.length : '–';
+        }
+      } catch(e) { console.error('User count error', e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStats();
+      loadRules();
+    });
+  </script>
+</body>
+</html>
