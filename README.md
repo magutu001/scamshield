@@ -74,22 +74,12 @@ cd backend
 pip install -r requirements.txt
 ```
 
-**3. Configure email credentials**
-
-Copy `.env.example` to `.env` in the `backend/` folder and fill in your credentials:
-```
-SMTP_EMAIL=your_gmail@gmail.com
-SMTP_PASSWORD=your_app_password
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-```
-
-**4. Run the server**
+**3. Run the server**
 ```bash
 python -m uvicorn main:app --reload --port 8000
 ```
 
-**5. Open in browser**
+**4. Open in browser**
 ```
 http://localhost:8000
 ```
